@@ -1,70 +1,52 @@
 package at.maymay.convertme.application.core;
 
-import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import at.maymay.convertme.R;
+import at.maymay.convertme.application.config.AppConfig;
+import at.maymay.convertme.application.core.model.Category;
 import at.maymay.convertme.application.core.ui.CategorySelectionToolbar;
-import at.maymay.convertme.application.core.ui.ConversionListElement;
+import at.maymay.convertme.application.core.ui.ConversionCollection;
 
-import static android.text.Selection.selectAll;
-import static android.text.Selection.setSelection;
-
-public class Converter extends AppCompatActivity implements View.OnClickListener{
-
+public class Converter extends AppCompatActivity implements View.OnClickListener
+{
     FloatingActionButton btn_fabtoolbar;
+    FloatingActionButton btn_delete;
     CategorySelectionToolbar fabtoolbar;
-
-    private List<ConversionListElement> list_elements = new ArrayList<>();
+    ConversionCollection c_collection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_converter);
 
+        c_collection = new ConversionCollection(this, AppConfig.profileContainer().profiles());
         btn_fabtoolbar = (FloatingActionButton) findViewById(R.id.btn_fabtoolbar);
+        btn_delete = (FloatingActionButton) findViewById(R.id.fab_delete);
         fabtoolbar = new CategorySelectionToolbar(this);
 
         btn_fabtoolbar.setOnClickListener(this);
+        btn_delete.setOnClickListener(this);
     }
 
-    public static double convert(Unit from, Unit to, double value) {
-        Category cat = new Temperature();
-        String[] strings = cat.getStringifytUnitList();
-        if(Arrays.asList(strings).contains(from.getShortcut()))
-            return convertTemperature(from, to, value);
-        return (value * from.getFactor()) / to.getFactor();
-    }
-
-    public static double convertTemperature(Unit from, Unit to, double value)
+    public void newConversion(Category category)
     {
-        if(from.getShortcut().equals("K"))
-            value -= from.getFactor();
-        switch (to.getShortcut()){
-            case "°C":
-                if(from.getShortcut().equals("F°"))
-                    return (value - 32.0) / 1.8;
-                break;
-            case "F°":
-                value = value * 1.8 + 32.0;
-                break;
-            case "K":
-                if(from.getShortcut().equals("F°"))
-                    value =  ((value - 32.0)/from.getFactor());
-                value += to.getFactor();
-            default:
-                return value;
-        }
-        return value;
+        c_collection.addNewConversion(category);
+    }
+
+    public void showDeleteButton()
+    {
+        btn_delete.show();
+    }
+
+    public void showToolbarButton()
+    {
+        btn_fabtoolbar.show();
     }
 
     @Override
@@ -73,17 +55,23 @@ public class Converter extends AppCompatActivity implements View.OnClickListener
         switch(view.getId())
         {
             case R.id.btn_fabtoolbar:
-                fabtoolbar.show();
+                if(!c_collection.deleteModeOn())
+                {
+                    btn_delete.hide();
+                    fabtoolbar.show();
+                    btn_fabtoolbar.hide();
+                }
                 break;
+
+            case R.id.fab_delete:
+                c_collection.toggleDeleteMode(btn_delete);
+
+                if(c_collection.deleteModeOn()) {
+                    btn_fabtoolbar.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#36454f")));
+                }
+                else{
+                    btn_fabtoolbar.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#ff303f9f")));
+                }
         }
-    }
-
-    public void addNewConversionLine(Category category)
-    {
-        ConversionListElement new_element = new ConversionListElement(this, category);
-        list_elements.add(new_element);
-
-        LinearLayout llayout = (LinearLayout) findViewById(R.id.layout_conversions);
-        llayout.addView(new_element.getView());
     }
 }
